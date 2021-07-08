@@ -94,6 +94,7 @@ jobs:
           name: Backend-end test cases
           command: |
             cd backend
+            npm install jest
             npm run test
 
 workflows:
