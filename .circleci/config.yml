@@ -146,6 +146,32 @@ jobs:
               --tags project=udapeopleproject \
               --stack-name udapeopleproject-frontendstack-${CIRCLE_WORKFLOW_ID} \
               --parameter-overrides ID=${CIRCLE_WORKFLOW_ID}
+  create_inventory:
+    working_directory: ~/project
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout 
+      - run:
+          name: Install dependencies
+          command: |
+            yum install -y tar gzip     
+      - run:
+          name: Add back-end ip to ansible inventory and upload dnsname to memstash
+          command: |
+             echo "[web]" > .circleci/ansible/inventory.txt
+             aws ec2 describe-instances \
+               --filter Name=tag:aws:cloudformation:stack-name,Values=udapeopleproject-backendstack* Name=instance-state-name,Values=running \
+               --query 'Reservations[*].Instances[*].PublicIpAddress' \
+               --output text >> .circleci/ansible/inventory.txt
+             dnsname=$(aws ec2 describe-instances --filter Name=tag:aws:cloudformation:stack-name,Values=udapeopleproject-backendstack* Name=instance-state-name,Values=running --query 'Reservations[*].Instances[*].PublicDnsName' --output text)
+             curl -H "Content-Type: text/plain" -H "token: API_URL-${CIRCLE_WORKFLOW_ID}" --request PUT --data ${dnsname} https://api.memstash.io/values/dnsname               
+  
+      - persist_to_workspace:
+          root: ~/project
+          paths: 
+            - .circleci/ansible/inventory.txt
+      - destroy-environment        
 
 workflows:
   default:
