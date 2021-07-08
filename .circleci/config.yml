@@ -134,7 +134,7 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
-              --tags project=udapeopleproject \
+              --tags project=udapeople \
               --stack-name udapeopleproject-backendstack-${CIRCLE_WORKFLOW_ID} \
               --parameter-overrides ID=${CIRCLE_WORKFLOW_ID}
               
@@ -143,9 +143,10 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
-              --tags project=udapeopleproject \
+              --tags project=udapeople \
               --stack-name udapeopleproject-frontendstack-${CIRCLE_WORKFLOW_ID} \
               --parameter-overrides ID=${CIRCLE_WORKFLOW_ID}
+  
   create_inventory:
     working_directory: ~/project
     docker:
@@ -161,7 +162,7 @@ jobs:
           command: |
              echo "[web]" > .circleci/ansible/inventory.txt
              aws ec2 describe-instances \
-               --filter Name=tag:aws:cloudformation:stack-name,Values=udapeopleproject-backendstack* Name=instance-state-name,Values=running \
+              # --filter Name=tag:aws:cloudformation:stack-name,Values=udapeopleproject-backendstack* Name=instance-state-name,Values=running \
                --query 'Reservations[*].Instances[*].PublicIpAddress' \
                --output text >> .circleci/ansible/inventory.txt
              dnsname=$(aws ec2 describe-instances --filter Name=tag:aws:cloudformation:stack-name,Values=udapeopleproject-backendstack* Name=instance-state-name,Values=running --query 'Reservations[*].Instances[*].PublicDnsName' --output text)
