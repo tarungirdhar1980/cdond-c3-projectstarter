@@ -121,6 +121,7 @@ jobs:
           name: Backend vulnerability scan
           command: |
             cd backend
+            npm install
             npm audit --audit-level=critical
 
 
