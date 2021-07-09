@@ -162,9 +162,12 @@ jobs:
           command: |
              echo "[web]" > .circleci/ansible/inventory.txt
              aws ec2 describe-instances \
-              # --filter Name=tag:aws:cloudformation:stack-name,Values=udapeopleproject-backendstack* Name=instance-state-name,Values=running \
+               --filter Name=tag:aws:cloudformation:stack-name,Values=udapeopleproject-backendstack* Name=instance-state-name,Values=running \
                --query 'Reservations[*].Instances[*].PublicIpAddress' \
                --output text >> .circleci/ansible/inventory.txt
+               ls -ltr
+               pwd
+               cat .circleci/ansible/inventory.txt
       - persist_to_workspace:
           root: ~/project
           paths: 
