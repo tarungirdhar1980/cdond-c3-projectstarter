@@ -167,7 +167,7 @@ jobs:
                --output text >> .circleci/ansible/inventory.txt
              dnsname=$(aws ec2 describe-instances --filter Name=tag:aws:cloudformation:stack-name,Values=udapeopleproject-backendstack* Name=instance-state-name,Values=running --query 'Reservations[*].Instances[*].PublicDnsName' --output text)
              curl -H "Content-Type: text/plain" -H "token: API_URL-${CIRCLE_WORKFLOW_ID}" --request PUT --data ${dnsname} https://api.memstash.io/values/dnsname               
-             ls -ltr
+             pwd
              cat .circleci/ansible/inventory.txt
 
       - persist_to_workspace:
