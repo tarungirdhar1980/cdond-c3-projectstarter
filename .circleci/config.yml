@@ -243,8 +243,24 @@ jobs:
 workflows:
   default:
     jobs:
-      - create_inventory
-      - configure_infrastructure:
+      - build-frontend
+      - build-backend:
+          requires: [build-frontend]
+      - test-frontend:
+          requires: [build-frontend]
+      - test-backend:
+          requires: [build-backend]
+      - scan-backend:
+          requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]
+      - deploy-infrastructure:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+      - create_inventory:
+          requires: [deploy-infrastructure]
+      - check_inventory:
           requires: [create_inventory]
+      - configure_infrastructure:
+          requires: [check_inventory]
       - run_migrations:
           requires: [configure_infrastructure]
