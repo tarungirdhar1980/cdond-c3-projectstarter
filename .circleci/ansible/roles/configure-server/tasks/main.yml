@@ -1,6 +1,6 @@
 ---
 - name: "set python"
-  command: export python=/usr/bin/python3
+  command: export python=/usr/bin/python3.8
   
 - name: "Add nodejs apt key"
   apt_key:
