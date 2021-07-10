@@ -172,7 +172,40 @@ jobs:
           root: ~/project
           paths: 
             - .circleci/ansible/inventory.txt
-      - destroy-environment        
+      - destroy-environment 
+  
+  configure_infrastructure:
+    docker:
+      - image: python:3.7-alpine3.11
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["8c:e5:41:de:cb:53:d8:4c:7c:3f:d4:22:b9:ad:ac:95"]
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update ansible
+            apk -Uuv add groff less python py-pip
+            pip install awscli
+            
+      - run:
+          name: List files under Ansible Directory
+          command: |
+            cd .circleci/ansible
+            ls -lrt            
+      - run:
+          name: Configure server
+          command: |
+            cd .circleci/ansible
+            ansible-playbook -i inventory.txt  configure-server.yml
+      - run:
+          name: Configure node-exporter
+          command: |
+            cd .circleci/ansible
+            ansible-playbook -i inventory.txt  configure-prometheus-node-exporter.yml
+      - destroy-environment
 
 workflows:
   default:
@@ -191,5 +224,8 @@ workflows:
           requires: [test-frontend, test-backend, scan-frontend, scan-backend]
       - create_inventory:
           requires: [deploy-infrastructure]
+      - configure_infrastructure:
+          requires: [create_inventory]
+      
       
       
