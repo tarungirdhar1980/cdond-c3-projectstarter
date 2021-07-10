@@ -1,6 +1,7 @@
 ---
-- name: "set python"
-  command: export python=/usr/bin/python3.8
+
+- name: Install Python
+      raw: apt -y update && apt install -y python-minimal
   
 - name: "Add nodejs apt key"
   apt_key:
