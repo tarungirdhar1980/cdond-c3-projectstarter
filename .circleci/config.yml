@@ -259,6 +259,6 @@ workflows:
       - create_inventory:
           requires: [deploy-infrastructure]
       - configure_infrastructure:
-          requires: [check_inventory]
+          requires: [create_inventory]
       - run_migrations:
           requires: [configure_infrastructure]
