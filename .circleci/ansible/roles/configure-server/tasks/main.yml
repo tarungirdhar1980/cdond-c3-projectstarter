@@ -23,8 +23,13 @@
   apt_repository:
     repo: deb https://deb.nodesource.com/node_13.x bionic main
     update_cache: yes
+ 
+ - name: "Install Python"
+   become: yes
+   apt: 
+      name: python-minimal
 
-- name: get Python version
+- name: "get Python version"
   shell: python --version 2>&1
 
 - name: "install dependencies."
