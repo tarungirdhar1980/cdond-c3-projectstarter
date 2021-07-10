@@ -12,26 +12,27 @@ commands:
           command: |
             # Your code here
             exit 1
-
+         
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
     parameters:
-      # Add parameter here     
+      memstash-token:
+        description: Memstash token for migration result
+        type: string
+        default: "token:migrationstatus_${CIRCLE_WORKFLOW_ID}"     
     steps:
       - run:
           name: Revert migrations
-          # Add when this will run
+          when: on_fail 
           command: |
-            # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-            SUCCESS = 1
-            if(( $SUCCESS==1 )); 
+            SUCCESS=$(curl -H "Content-Type: text/plain" -H << parameters.memstash-token >> --request GET https://api.memstash.io/values/migrationStatus)
+            if [ $SUCCESS==1 ] 
             then
-            #  cd ~/project/backend
-            #  npm install
-            #  Add revert code here. You can find this in the Getting Started section.
-              exit 1
+              cd ~/project/backend
+              npm install
+              npm migrations:revert
             fi
-            
+
 jobs:
   build-frontend:
     docker:
@@ -206,6 +207,39 @@ jobs:
             cd .circleci/ansible
             ansible-playbook -i inventory.txt  configure-prometheus-node-exporter.yml
       - destroy-environment
+ 
+  run_migrations:
+    docker:
+      - image: circleci/node:13.8.0
+    environment:
+      status: 0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [build-backend]
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install awscli
+      - run:
+          name: Run migrations
+          command: |
+            cd backend
+            npm run migrations > out.log
+            status=`grep -c "has been executed successfully"  out.log`
+            cat out.log
+            echo $status
+            if [[ $status -eq 0 ]]  
+            then
+              cat /home/circleci/.npm/_logs/*.log
+              npm run migrations:revert
+              curl -H "Content-Type: text/plain" -H "token: migrationstatus-${CIRCLE_WORKFLOW_ID}" --request PUT --data "$status" https://api.memstash.io/values/migrationStatus
+            else  
+              status=1
+              curl -H "Content-Type: text/plain" -H "token: migrationstatus-${CIRCLE_WORKFLOW_ID}" --request PUT --data "$status" https://api.memstash.io/values/migrationStatus
+            fi
+      - destroy-environment
 
 workflows:
   default:
@@ -213,3 +247,5 @@ workflows:
       - create_inventory
       - configure_infrastructure:
           requires: [create_inventory]
+      - run_migrations:
+          requires: [configure_infrastructure]
