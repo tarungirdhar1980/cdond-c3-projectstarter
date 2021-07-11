@@ -226,8 +226,10 @@ jobs:
           name: Run migrations
           command: |
             cd backend
-            npm i
+            echo "I am here"
+            cat /home/circleci/.npm/_logs/*.log
             npm run migrations > out.log
+            echo "migration ran"
             status=`grep -c "has been executed successfully"  out.log`
             cat out.log
             echo $status
