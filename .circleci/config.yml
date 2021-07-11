@@ -227,21 +227,8 @@ jobs:
           command: |
             cd backend
             echo "I am here"
-            npm run migrations > out.log
-            echo "migration ran"
-            status=`grep -c "has been executed successfully"  out.log`
-            cat out.log
-            echo $status
-            if [[ $status -eq 0 ]]  
-            then
-              npm run migrations:revert
-              curl -H "Content-Type: text/plain" -H "token: migrationstatus-${CIRCLE_WORKFLOW_ID}" --request PUT --data "$status" https://api.memstash.io/values/migrationStatus
-            else  
-              status=1
-              curl -H "Content-Type: text/plain" -H "token: migrationstatus-${CIRCLE_WORKFLOW_ID}" --request PUT --data "$status" https://api.memstash.io/values/migrationStatus
-            fi
-      - destroy-environment
-
+            cat /home/circleci/.npm/_logs/2021-07-11T16_13_35_960Z-debug.log
+ 
 workflows:
   default:
     jobs:
