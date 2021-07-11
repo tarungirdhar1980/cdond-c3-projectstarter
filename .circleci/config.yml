@@ -244,5 +244,4 @@ jobs:
 workflows:
   default:
     jobs:
-      - run_migrations:
-          requires: [configure_infrastructure]
+      - run_migrations
