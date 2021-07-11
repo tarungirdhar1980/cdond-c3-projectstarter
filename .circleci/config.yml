@@ -208,27 +208,37 @@ jobs:
             ansible-playbook -i inventory.txt  configure-prometheus-node-exporter.yml
       - destroy-environment
  
-  run_migrations:
+  deploy-frontend:
     docker:
-      - image: circleci/node:13.8.0
-    environment:
-      status: 0
+      - image: amazon/aws-cli
     steps:
       - checkout
-      - restore_cache:
-          keys: [build-backend]
       - run:
           name: Install dependencies
           command: |
-            sudo apt-get update
-            sudo apt-get install awscli
+            yum install -y tar gzip
+            curl -sL https://rpm.nodesource.com/setup_13.x | bash -
+            yum install -y nodejs 
+      - attach_workspace:
+          at: ~/project
       - run:
-          name: Run migrations
+          name: Get API_URL
           command: |
-            cd backend
-            echo "I am here"
-            cat /home/circleci/.npm/_logs/2021-07-11T16_13_35_960Z-debug.log
- 
+            DNSNAME=$(curl -H "token: API_URL-${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/dnsname)
+            API_URL="http://${DNSNAME}:3030"
+            curl -H "Content-Type: text/plain" -H "token:API_URL_${CIRCLE_WORKFLOW_ID}" --request PUT --data "$API_URL" https://api.memstash.io/values/API_URL
+            export API_URL="http://${DNSNAME}:3030"
+            echo "API_URL=${API_URL}" >> ~/project/frontend/.env
+            echo "NODE_ENV=production" >> ~/project/frontend/.env
+            echo "ENVIRONMENT=production" >>  ~/project/frontend/.env
+            cat ~/project/frontend/.env
+            echo "API_URL=${API_URL}"
+            cd ~/project/frontend
+            npm install
+            npm run build
+            cd dist
+            ls -lrt
+            aws s3 sync . s3://udapeople-"${CIRCLE_WORKFLOW_ID}" --delete
 workflows:
   default:
     jobs:
