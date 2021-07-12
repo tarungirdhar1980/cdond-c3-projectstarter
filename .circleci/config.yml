@@ -211,74 +211,60 @@ jobs:
             ansible-playbook -i inventory.txt  configure-prometheus-node-exporter.yml
       - destroy-environment
  
-  deploy-frontend:
+  run_migrations:
     docker:
-      - image: amazon/aws-cli
+      - image: circleci/node:13.8.0
+    environment:
+      status: 0
     steps:
       - checkout
+      - restore_cache:
+          keys: [build-backend]
       - run:
           name: Install dependencies
           command: |
-            yum install -y tar gzip
-            curl -sL https://rpm.nodesource.com/setup_13.x | bash -
-            yum install -y nodejs 
-      - attach_workspace:
-          at: ~/project
+            sudo apt-get update
+            sudo apt-get install awscli
       - run:
-          name: Get API_URL
-          command: |
-            DNSNAME=$(curl -H "token: API_URL-${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/dnsname)
-            API_URL="http://${DNSNAME}:3030"
-            curl -H "Content-Type: text/plain" -H "token:API_URL_${CIRCLE_WORKFLOW_ID}" --request PUT --data "$API_URL" https://api.memstash.io/values/API_URL
-            export API_URL="http://${DNSNAME}:3030"
-            echo "API_URL=${API_URL}" >> ~/project/frontend/.env
-            echo "NODE_ENV=production" >> ~/project/frontend/.env
-            echo "ENVIRONMENT=production" >>  ~/project/frontend/.env
-            cat ~/project/frontend/.env
-            echo "API_URL=${API_URL}"
-            cd ~/project/frontend
-            npm install
-            npm run build
-            cd dist
-            ls -lrt
-            aws s3 sync . s3://udapeople-"${CIRCLE_WORKFLOW_ID}" --delete
-      - destroy-environment         
-      - revert-migrations
-
-  deploy-backend:
-    docker:
-      - image: python:3.7-alpine3.11
-    steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints: ["8c:e5:41:de:cb:53:d8:4c:7c:3f:d4:22:b9:ad:ac:95"]
-      - attach_workspace:
-          at: ~/project
-      - run:
-          name: Install dependencies
-          command: |
-            apk add --update ansible tar gzip nodejs npm curl
-            apk -Uuv add groff less python py-pip
-            pip install awscli            
-      - run:
-          name: Deploy backend
+          name: Run migrations
           command: |
             cd backend
-            npm install
-            npm run build
-            
-            cp -r node_modules dist/
-            tar -czvf backend_artifact.tar.gz dist
-            
-            cd ..
-            mv backend/backend_artifact.tar.gz .circleci/ansible/roles/deploy/files
-            cd .circleci/ansible/roles/deploy/files
-            ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml -vvv
-      - destroy-environment         
-      - revert-migrations
+            npm run migrations > output.log
+            status=`grep -c "has been executed successfully"  output.log`
+            cat output.log
+            echo $status
+            if [[ $status -eq 0 ]]  
+            then
+              cat /home/circleci/.npm/_logs/*.log
+              npm run migrations:revert
+              curl -H "Content-Type: text/plain" -H "token: migration-${CIRCLE_WORKFLOW_ID}" --request PUT --data "$migration_status" https://api.memstash.io/values/migrationStatus
+            else  
+              migration_status=1
+              curl -H "Content-Type: text/plain" -H "token: migration-${CIRCLE_WORKFLOW_ID}" --request PUT --data "$migration_status" https://api.memstash.io/values/migrationStatus
+            fi
+      - destroy-environment
 
 workflows:
   default:
     jobs:
-      - deploy-backend
+      - build-frontend
+      - build-backend:
+          requires: [build-frontend]
+      - test-frontend:
+          requires: [build-frontend]
+      - test-backend:
+          requires: [build-backend]
+      - scan-backend:
+          requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]
+      - deploy-infrastructure:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+      - create_inventory:
+          requires: [deploy-infrastructure]
+      - configure_infrastructure:
+          requires: [create_inventory]
+      - run_migrations:
+          requires: [configure_infrastructure]
+
           
