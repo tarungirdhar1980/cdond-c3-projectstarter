@@ -231,7 +231,6 @@ jobs:
             cd backend
             ls -ltr
             npm run migrations
-            no_output_timeout: 30m
             status=`grep -c "has been executed successfully"  output.log`
             cat output.log
             echo $status
