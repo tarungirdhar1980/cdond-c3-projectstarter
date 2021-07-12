@@ -251,7 +251,8 @@ workflows:
       - build-backend
       - scan-backend:
           requires: [build-backend]
-      - run_migrations
+      - run_migrations:
+          requires: [scan-backend]
          
 
           
