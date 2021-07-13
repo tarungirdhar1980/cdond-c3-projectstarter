@@ -319,6 +319,6 @@ workflows:
       - create_inventory:
           requires: [scan-backend]
       - deploy-backend:
-          requires: [create-inventory]
+          requires: [create_inventory]
       
       
