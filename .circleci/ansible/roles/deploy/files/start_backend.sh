@@ -2,7 +2,7 @@
 ENVIRONMENT=production
 NODE_ENV=production
 TYPEORM_CONNECTION=postgres
-TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts
+TYPEORM_ENTITIES=./modules/domain/*/*/*.entity.js
 TYPEORM_HOST=postgres.cslksjoz5psg.us-west-2.rds.amazonaws.com
 TYPEORM_PORT=5432
 TYPEORM_USERNAME=postgres
