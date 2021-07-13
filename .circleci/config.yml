@@ -260,9 +260,9 @@ jobs:
       - run:
           name: Get API_URL
           command: |
-            DNSNAME=$(curl -H "token: API_URL-51aed560-8d33-4648-a267-451deaf119e7 --request GET https://api.memstash.io/values/dnsname)
+            DNSNAME=$(curl -H "token: API_URL-51aed560-8d33-4648-a267-451deaf119e7" --request GET https://api.memstash.io/values/dnsname)
             API_URL="http://${DNSNAME}:3030"
-            curl -H "Content-Type: text/plain" -H "token:API_URL_51aed560-8d33-4648-a267-451deaf119e7 --request PUT --data "$API_URL" https://api.memstash.io/values/API_URL
+            curl -H "Content-Type: text/plain" -H "token:API_URL_51aed560-8d33-4648-a267-451deaf119e7" --request PUT --data "$API_URL" https://api.memstash.io/values/API_URL
             export API_URL="http://${DNSNAME}:3030"
             echo "API_URL=${API_URL}" >> ~/project/frontend/.env
             echo "NODE_ENV=production" >> ~/project/frontend/.env
