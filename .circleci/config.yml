@@ -243,15 +243,42 @@ jobs:
               curl -H "Content-Type: text/plain" -H "token: migration-${CIRCLE_WORKFLOW_ID}" --request PUT --data "$status" https://api.memstash.io/values/migrationStatus
             fi
       - destroy-environment
-
+  
+  deploy-frontend:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            yum install -y tar gzip
+            curl -sL https://rpm.nodesource.com/setup_13.x | bash -
+            yum install -y nodejs 
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: Get API_URL
+          command: |
+            DNSNAME=$(curl -H "token: API_URL-51aed560-8d33-4648-a267-451deaf119e7 --request GET https://api.memstash.io/values/dnsname)
+            API_URL="http://${DNSNAME}:3030"
+            curl -H "Content-Type: text/plain" -H "token:API_URL_51aed560-8d33-4648-a267-451deaf119e7 --request PUT --data "$API_URL" https://api.memstash.io/values/API_URL
+            export API_URL="http://${DNSNAME}:3030"
+            echo "API_URL=${API_URL}" >> ~/project/frontend/.env
+            echo "NODE_ENV=production" >> ~/project/frontend/.env
+            echo "ENVIRONMENT=production" >>  ~/project/frontend/.env
+            cat ~/project/frontend/.env
+            echo "API_URL=${API_URL}"
+            cd ~/project/frontend
+            npm install
+            npm run build
+            cd dist
+            ls -lrt
+            aws s3 sync . s3://udapeople-51aed560-8d33-4648-a267-451deaf119e7 --delete
+      - destroy-environment         
+      - revert-migrations
 workflows:
   default:
     jobs:
-      - build-backend
-      - scan-backend:
-          requires: [build-backend]
-      - run_migrations:
-          requires: [scan-backend]
-         
-
-          
+      - deploy-frontend
+      
