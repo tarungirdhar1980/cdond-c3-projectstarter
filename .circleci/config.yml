@@ -4,22 +4,33 @@ commands:
   destroy-environment:
     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
     parameters:
-      # Add parameter here   
+      backend-stack:
+        description: backend stack name
+        type: string
+        default: udapeople-backendstack-${CIRCLE_WORKFLOW_ID}
+      frontend-stack:
+        description: frontend stack name
+        type: string
+        default: udapeople-frontendstack-${CIRCLE_WORKFLOW_ID}
+      bucket-name:
+        description: frontend S3 bucket name
+        type: string
+        default: udapeople-"${CIRCLE_WORKFLOW_ID}"
     steps:
       - run:
           name: Destroy environments
           when: on_fail
           command: |
-            # Your code here
-            exit 1
-         
+            aws cloudformation delete-stack --stack-name << parameters.frontend-stack >>
+            aws cloudformation delete-stack --stack-name << parameters.backend-stack >>
+            aws s3 rm s3://<< parameters.bucket-name >> --recursive
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
     parameters:
       memstash-token:
         description: Memstash token for migration result
         type: string
-        default: "token:migrationstatus_${CIRCLE_WORKFLOW_ID}"     
+        default: "token:migration_${CIRCLE_WORKFLOW_ID}"     
     steps:
       - run:
           name: Revert migrations
@@ -32,7 +43,6 @@ commands:
               npm install
               npm migrations:revert
             fi
-
 jobs:
   build-frontend:
     docker:
@@ -136,7 +146,7 @@ jobs:
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
               --tags project=udapeople \
-              --stack-name udapeopleproject-backendstack-${CIRCLE_WORKFLOW_ID} \
+              --stack-name udapeople-backendstack-${CIRCLE_WORKFLOW_ID} \
               --parameter-overrides ID=${CIRCLE_WORKFLOW_ID}
               
       - run:
@@ -145,7 +155,7 @@ jobs:
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
               --tags project=udapeople \
-              --stack-name udapeopleproject-frontendstack-${CIRCLE_WORKFLOW_ID} \
+              --stack-name udapeople-frontendstack-${CIRCLE_WORKFLOW_ID} \
               --parameter-overrides ID=${CIRCLE_WORKFLOW_ID}
   
   create_inventory:
@@ -163,14 +173,14 @@ jobs:
           command: |
              echo "[web]" > .circleci/ansible/inventory.txt
              aws ec2 describe-instances \
-               --filter Name=tag:aws:cloudformation:stack-name,Values=udapeopleproject-backendstack* Name=instance-state-name,Values=running \
+               --filter Name=tag:aws:cloudformation:stack-name,Values=udapeople-backendstack* Name=instance-state-name,Values=running \
                --query 'Reservations[*].Instances[*].PublicIpAddress' \
                --output text >> .circleci/ansible/inventory.txt
                ls -ltr
                pwd
                cat .circleci/ansible/inventory.txt
              
-             dnsname=$(aws ec2 describe-instances --filter Name=tag:aws:cloudformation:stack-name,Values=udapeopleproject-backendstack* Name=instance-state-name,Values=running --query 'Reservations[*].Instances[*].PublicDnsName' --output text)
+             dnsname=$(aws ec2 describe-instances --filter Name=tag:aws:cloudformation:stack-name,Values=udapeople-backendstack* Name=instance-state-name,Values=running --query 'Reservations[*].Instances[*].PublicDnsName' --output text)
              curl -H "Content-Type: text/plain" -H "token: API_URL-${CIRCLE_WORKFLOW_ID}" --request PUT --data ${dnsname} https://api.memstash.io/values/dnsname   
       - persist_to_workspace:
           root: ~/project
@@ -260,9 +270,9 @@ jobs:
       - run:
           name: Get API_URL
           command: |
-            DNSNAME=$(curl -H "token: API_URL-51aed560-8d33-4648-a267-451deaf119e7" --request GET https://api.memstash.io/values/dnsname)
+            DNSNAME=$(curl -H "token: API_URL-${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/dnsname)
             API_URL="http://${DNSNAME}:3030"
-            curl -H "Content-Type: text/plain" -H "token:API_URL_51aed560-8d33-4648-a267-451deaf119e7" --request PUT --data "$API_URL" https://api.memstash.io/values/API_URL
+            curl -H "Content-Type: text/plain" -H "token:API_URL_${CIRCLE_WORKFLOW_ID}" --request PUT --data "$API_URL" https://api.memstash.io/values/API_URL
             export API_URL="http://${DNSNAME}:3030"
             echo "API_URL=${API_URL}" >> ~/project/frontend/.env
             echo "NODE_ENV=production" >> ~/project/frontend/.env
@@ -274,7 +284,7 @@ jobs:
             npm run build
             cd dist
             ls -lrt
-            aws s3 sync . s3://udapeople-51aed560-8d33-4648-a267-451deaf119e7 --delete
+            aws s3 sync . s3://udapeople-{CIRCLE_WORKFLOW_ID} --delete
       - destroy-environment         
       - revert-migrations
   deploy-backend:
@@ -308,17 +318,74 @@ jobs:
             ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml -vvv
       - destroy-environment         
       - revert-migrations
+
+  smoke-test:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [build-backend]
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install awscli
+            sudo apt install curl
+      - run:
+          name: Smoke test for frontend
+          command: |
+            export URL="http://udapeople-${CIRCLE_WORKFLOW_ID}.s3-website-us-west-2.amazonaws.com"
+            echo "Frontend URL: $URL"
+            if [[ $(curl -s ${URL} | grep  "Welcome") ]]
+            then
+              exit 0
+            else
+              exit 1
+            fi
+      - run:
+          name: Get backend url and run smoke test
+          command: |
+            export API_URL=$(curl -H "Content-Type: text/plain" -H "token:API_URL_${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/API_URL)
+            echo "Backend API_URL: $API_URL"
+            if curl -s $API_URL > curl_backend_output.txt
+            then
+              exit 0
+            else
+              exit 1
+            fi
+      - destroy-environment         
+      - revert-migrations
+
 workflows:
   default:
     jobs:
-      - build-backend
+      - build-frontend
+      - build-backend:
+          requires: [build-frontend]
+      - test-frontend:
+          requires: [build-frontend]
       - test-backend:
           requires: [build-backend]
       - scan-backend:
-          requires: [test-backend]
+          requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]
+      - deploy-infrastructure:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+          filters:
+            branches:
+              only: [main]
       - create_inventory:
-          requires: [scan-backend]
-      - deploy-backend:
+          requires: [deploy-infrastructure]
+      - configure_infrastructure:
           requires: [create_inventory]
-      
+      - run_migrations:
+          requires: [configure_infrastructure]
+      - deploy-frontend:
+          requires: [run_migrations]
+      - deploy-backend:
+          requires: [run_migrations]
+      - smoke-test:
+          requires: [deploy-frontend, deploy-backend]
       
