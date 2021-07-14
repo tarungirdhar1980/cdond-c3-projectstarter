@@ -317,7 +317,8 @@ jobs:
             cd .circleci/ansible/roles/deploy/files
             ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml -vvv
 
-
+      - destroy-environment         
+      - revert-migrations
   smoke-test:
     docker:
       - image: circleci/node:13.8.0
@@ -359,11 +360,28 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-backend
+      - build-frontend
+      - build-backend:
+          requires: [build-frontend]
+      - test-frontend:
+          requires: [build-frontend]
+      - test-backend:
+          requires: [build-backend]
       - scan-backend:
           requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]
+      - deploy-infrastructure:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
       - create_inventory:
-          requires: [scan-backend]
-      - deploy-backend:
+          requires: [deploy-infrastructure]
+      - configure_infrastructure:
           requires: [create_inventory]
-      
+      - run_migrations:
+          requires: [configure_infrastructure]
+      - deploy-frontend:
+          requires: [run_migrations]
+      - deploy-backend:
+          requires: [run_migrations]
+      - smoke-test:
+          requires: [deploy-frontend, deploy-backend]
