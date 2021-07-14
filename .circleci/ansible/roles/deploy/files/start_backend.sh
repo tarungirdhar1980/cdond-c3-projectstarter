@@ -1,6 +1,6 @@
 #!/bin/sh
-export ENVIRONMENT=development
-export NODE_ENV=development
+export ENVIRONMENT=production
+export NODE_ENV=production
 export TYPEORM_CONNECTION=postgres
 export TYPEORM_ENTITIES=./modules/domain/*/*/*.entity.js
 export TYPEORM_HOST=postgres.cslksjoz5psg.us-west-2.rds.amazonaws.com
