@@ -25,6 +25,7 @@
   shell: |
     tar -xzf backend_artifact.tar.gz
     rm backend_artifact.tar.gz
+    
 - name: "copy script to run backend servcies"
   become: true
   copy:
@@ -39,4 +40,7 @@
 - name: "run backend services"
   become: true
   shell: |
-    sh -x dist/start_backend.sh
+    pwd
+    cd dist
+    ls -ltr
+    sh -x start_backend.sh
