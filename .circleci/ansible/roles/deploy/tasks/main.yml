@@ -36,6 +36,11 @@
   become: true
   shell: |
     chmod 777 dist/start_backend.sh
+    
+- name: "install dos2unix"
+  become: true
+  shell: |
+    sudo apt install dos2unix 
  
 - name: "run backend services"
   become: true
@@ -43,4 +48,6 @@
     pwd
     cd dist
     ls -ltr
+    dos2unix start_backend.sh
     sh -x start_backend.sh
+    
