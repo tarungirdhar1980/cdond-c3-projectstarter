@@ -8,5 +8,5 @@ TYPEORM_PORT=5432
 TYPEORM_USERNAME=postgres
 TYPEORM_PASSWORD=test1234
 TYPEORM_DATABASE=postgres
-
+echo "environment variable is $TYPEORM_ENTITIES"
 nohup node /home/ubuntu/dist/main.js &
