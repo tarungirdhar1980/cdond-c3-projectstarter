@@ -10,7 +10,7 @@
     export ENVIRONMENT=production
     export NODE_ENV=production
     export TYPEORM_CONNECTION=postgres
-    export TYPEORM_ENTITIES=./modules/domain/*/*/*.entity.js
+    export TYPEORM_ENTITIES=./dist/modules/domain/*/*/*.entity.js
     export TYPEORM_HOST=postgres.cslksjoz5psg.us-west-2.rds.amazonaws.com
     export TYPEORM_PORT=5432
     export TYPEORM_USERNAME=postgres
