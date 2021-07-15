@@ -295,12 +295,30 @@ jobs:
       - add_ssh_keys:
           fingerprints: ["8c:e5:41:de:cb:53:d8:4c:7c:3f:d4:22:b9:ad:ac:95"]
       - attach_workspace:
-          at: ~/project         
+          at: ~/project
+      - run:
+          name: Install dependencies
+          command: |
+           apk add --update ansible tar gzip nodejs npm curl
+            apk -Uuv add groff less python py-pip
+            pip install awscli            
       - run:
           name: Deploy backend
           command: |
-            ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml -vvv
+      #     cd backend
+      #     npm install
+      #     npm run build
             
+      #      cp -r node_modules dist/
+      #      tar -czvf backend_artifact.tar.gz dist
+            
+      #      cd ..
+      #      mv backend/backend_artifact.tar.gz .circleci/ansible/roles/deploy/files
+      #      cd .circleci/ansible/roles/deploy/files
+            ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml -vvv
+
+      - destroy-environment         
+      - revert-migrations
   smoke-test:
     docker:
       - image: circleci/node:13.8.0
@@ -336,12 +354,9 @@ jobs:
             else
               exit 1
             fi
-
 workflows:
   default:
     jobs:
       - create_inventory
       - deploy-backend:
           requires: [create_inventory]
-      
-
