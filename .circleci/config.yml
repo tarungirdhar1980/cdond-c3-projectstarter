@@ -357,6 +357,6 @@ jobs:
 
 workflows:
   default:
-    jobs
+    jobs:
       - deploy-backend
 
