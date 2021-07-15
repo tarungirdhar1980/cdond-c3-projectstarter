@@ -16,10 +16,6 @@
     export TYPEORM_USERNAME=postgres
     export TYPEORM_PASSWORD=test1234
     export TYPEORM_DATABASE=postgres
-
-- name: "run backend service"
-  become: true
-  shell: |
     nohup node /home/ubuntu/dist/main.js &
     
 - name: "check backend services status"
