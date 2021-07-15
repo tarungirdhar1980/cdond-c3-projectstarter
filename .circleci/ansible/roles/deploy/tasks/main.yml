@@ -42,12 +42,18 @@
   shell: |
     sudo apt install dos2unix 
  
-- name: "run backend services"
+- name: "convert dos to unix"
   become: true
   shell: |
-    pwd
-    cd dist
-    ls -ltr
-    dos2unix start_backend.sh
-    sh -x start_backend.sh
+    dos2unix dist/start_backend.sh
+   
+- name: "start backend service"
+  become: true
+  shell: |
+    sh -x dist/start_backend.sh
+    
+- name: "check backend services status"
+  become: true
+  shell: |
+    netstat -a |grep 3030
     
