@@ -3,50 +3,7 @@
   become: yes
   apt:
     update_cache: yes
-
-- name: "upgrade packages"
-  become: yes
-  apt:
-    upgrade: "yes"
-
-- name: "remove dependencies that are no longer required"
-  become: yes
-  apt:
-    autoremove: yes
-      
-- name: "copy distribution zip"
-  become: true
-  copy:
-    src: backend_artifact.tar.gz
-    dest: backend_artifact.tar.gz
-
-- name: "Unpack dist files"
-  become: true
-  shell: |
-    tar -xzf backend_artifact.tar.gz
-    rm backend_artifact.tar.gz
-    
-- name: "copy script to run backend servcies"
-  become: true
-  copy:
-    src: start_backend.sh
-    dest: dist/start_backend.sh
-
-- name: "change permissions"
-  become: true
-  shell: |
-    chmod 777 dist/start_backend.sh
-    
-- name: "install dos2unix"
-  become: true
-  shell: |
-    sudo apt install dos2unix 
- 
-- name: "convert dos to unix"
-  become: true
-  shell: |
-    dos2unix dist/start_backend.sh
-   
+  
 - name: "start backend service"
   become: true
   shell: |
