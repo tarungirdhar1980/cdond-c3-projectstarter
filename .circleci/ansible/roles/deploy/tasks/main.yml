@@ -40,4 +40,4 @@
     TYPEORM_PASSWORD: test1234
     TYPEORM_DATABASE: postgres
   shell: |
-    nohup node /home/ubuntu/dist/main.js &
+    node /home/ubuntu/dist/main.js
