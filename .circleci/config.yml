@@ -355,5 +355,7 @@ jobs:
 workflows:
   default:
     jobs:
-       - deploy-backend
+       - create_inventory
+       - deploy-backend:
+           requires: [create_inventory]
 
