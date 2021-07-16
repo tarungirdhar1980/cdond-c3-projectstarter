@@ -41,8 +41,3 @@
     TYPEORM_DATABASE: postgres
   shell: |
     nohup node /home/ubuntu/dist/main.js &
-    
-- name: "check backend services stats"
-  become: true
-  shell: |
-    netstat -a |grep 3030
