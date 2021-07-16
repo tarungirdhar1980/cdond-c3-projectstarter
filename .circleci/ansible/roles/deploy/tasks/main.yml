@@ -40,4 +40,4 @@
     TYPEORM_PASSWORD: test1234
     TYPEORM_DATABASE: postgres
   shell: |
-    node /home/ubuntu/dist/main.js
+    pm2 start dist/main.js
