@@ -316,7 +316,8 @@ jobs:
             mv backend/backend_artifact.tar.gz .circleci/ansible/roles/deploy/files
             cd .circleci/ansible/roles/deploy/files
             ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml -vvv
-            
+      - destroy-environment         
+      - revert-migrations        
   smoke-test:
     docker:
       - image: circleci/node:13.8.0
@@ -352,10 +353,65 @@ jobs:
             else
               exit 1
             fi
+      - destroy-environment         
+      - revert-migrations
+  
+  cloudfront-update:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Update cloudfront distribution
+          command: |
+            export OldWorkflowID=$(aws cloudformation \
+            list-exports --query 'Exports[?Name==`WorkflowID`].Value' \
+            --no-paginate --output text)
+            
+            export STACKS=($aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
+            --stack-status-filter CREATE_COMPLETE --no-paginate)
+            
+            echo Old Workflow Id: "${OldWorkflowID}"
+            aws cloudformation deploy \
+            --template-file .circleci/files/cloudfront.yml \
+            --stack-name=udapeople-cloudfront \
+            --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID}" \
+            --tags project=udapeople 
+            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
+            then
+              aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
+              aws cloudformation delete-stack --stack-name "udapeople-backendstack-${OldWorkflowID}"
+              aws cloudformation delete-stack --stack-name "udapeople-frontendstack-${OldWorkflowID}"
+            fi
+      
 workflows:
   default:
     jobs:
-       - create_inventory
-       - deploy-backend:
-           requires: [create_inventory]
+      - build-frontend
+      - build-backend:
+          requires: [build-frontend]
+      - test-frontend:
+          requires: [build-frontend]
+      - test-backend:
+          requires: [build-backend]
+      - scan-backend:
+          requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]
+      - deploy-infrastructure:
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+      - create_inventory:
+          requires: [deploy-infrastructure]
+      - configure_infrastructure:
+          requires: [create_inventory]
+      - run_migrations:
+          requires: [configure_infrastructure]
+      - deploy-frontend:
+          requires: [run_migrations]
+      - deploy-backend:
+          requires: [run_migrations]
+      - smoke-test:
+          requires: [deploy-frontend, deploy-backend]
+      - cloudfront-update:
+          requires: [smoke-test]
 
