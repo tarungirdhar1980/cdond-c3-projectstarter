@@ -3,7 +3,29 @@
   become: yes
   apt:
     update_cache: yes
-  
+
+- name: "upgrade packages"
+  become: yes
+  apt:
+    upgrade: "yes"
+
+- name: "remove dependencies that are no longer required"
+  become: yes
+  apt:
+    autoremove: yes
+      
+- name: "copy distribution zip"
+  become: true
+  copy:
+    src: backend_artifact.tar.gz
+    dest: backend_artifact.tar.gz
+
+- name: "Unpack dist files"
+  become: true
+  shell: |
+    tar -xzf backend_artifact.tar.gz
+    rm backend_artifact.tar.gz
+
 - name: "set variables"
   become: true
   shell: |
@@ -22,4 +44,3 @@
   become: true
   shell: |
     netstat -a |grep 3030
-    
