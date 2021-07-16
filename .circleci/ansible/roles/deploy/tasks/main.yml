@@ -39,8 +39,8 @@
     TYPEORM_USERNAME: postgres
     TYPEORM_PASSWORD: test1234
     TYPEORM_DATABASE: postgres
-  shell: 
-    nohup node /home/ubuntu/dist/main.js
+  shell: |
+    nohup node /home/ubuntu/dist/main.js &
     
 - name: "check backend services stats"
   become: true
