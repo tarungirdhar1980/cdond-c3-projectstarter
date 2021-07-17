@@ -365,7 +365,7 @@ jobs:
           name: Update cloudfront distribution
           command: |
             export OldWorkflowID=$(aws cloudformation \
-            list-exports --query 'Exports[?Name==`WorkflowID`].Value' \
+            list-exports --query 'Exports[?Name==`Workflow1ID`].Value' \
             --no-paginate --output text)
             
             export STACKS=($aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
