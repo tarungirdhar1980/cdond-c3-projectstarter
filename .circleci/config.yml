@@ -375,7 +375,7 @@ jobs:
             aws cloudformation deploy \
             --template-file .circleci/files/cloudfront.yml \
             --stack-name=udapeople-cloudfront \
-            --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID}" \
+            --parameter-overrides WorkflowID="293d01ed-8113-4646-8395-0d2e8ff609f5" \
             --tags project=udapeople 
             if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
             then
@@ -387,31 +387,6 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-frontend
-      - build-backend:
-          requires: [build-frontend]
-      - test-frontend:
-          requires: [build-frontend]
-      - test-backend:
-          requires: [build-backend]
-      - scan-backend:
-          requires: [build-backend]
-      - scan-frontend:
-          requires: [build-frontend]
-      - deploy-infrastructure:
-          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
-      - create_inventory:
-          requires: [deploy-infrastructure]
-      - configure_infrastructure:
-          requires: [create_inventory]
-      - run_migrations:
-          requires: [configure_infrastructure]
-      - deploy-frontend:
-          requires: [run_migrations]
-      - deploy-backend:
-          requires: [run_migrations]
-      - smoke-test:
-          requires: [deploy-frontend, deploy-backend]
-      - cloudfront-update:
-          requires: [smoke-test]
+      - cloudfront-update
+       
 
